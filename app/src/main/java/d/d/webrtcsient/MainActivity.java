@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import org.webrtc.DataChannel;
@@ -32,7 +33,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     PeerConnectionFactory factory;
     PeerConnection localPeer, remotePeer;
-    DataChannel localChannel, remoteChannel;
+    DataChannel dataChannel;
 
     MediaConstraints constraints;
 
@@ -127,9 +128,12 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onDataChannel(DataChannel dataChannel) {
-                            remoteChannel = dataChannel;
+                            MainActivity.this.dataChannel = dataChannel;
                             log("remote Channel set.");
-                            remoteChannel.registerObserver(new DataChannel.Observer() {
+                            runOnUiThread(() -> {
+                                ((EditText) findViewById(R.id.et)).setHint("type message here");
+                            });
+                            dataChannel.registerObserver(new DataChannel.Observer() {
                                 @Override
                                 public void onBufferedAmountChange(long l) {
 
@@ -150,14 +154,6 @@ public class MainActivity extends AppCompatActivity {
                                     });
                                 }
                             });
-                            new Thread(() -> {
-                                try {
-                                    Thread.sleep(1000);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                                remoteChannel.send(new DataChannel.Buffer(ByteBuffer.wrap("test".getBytes()), false));
-                            }).start();
                         }
 
                         @Override
@@ -272,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
                     log("onIceGatheringChange: " + localPeer.getLocalDescription().description);
 
                     try {
-                        Socket s = new Socket("192.168.0.103", 9999);
+                        Socket s = new Socket(((EditText)findViewById(R.id.et)).getText().toString(), 9999);
                         OutputStream o = s.getOutputStream();
                         log("sending description...");
                         o.write(localPeer.getLocalDescription().description.getBytes());
@@ -333,8 +329,6 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onDataChannel(DataChannel dataChannel) {
-                    localChannel = dataChannel;
-                    log("local Channel set.");
                 }
 
                 @Override
@@ -347,8 +341,8 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             });
-            localChannel = localPeer.createDataChannel("test", new DataChannel.Init());
-            localChannel.registerObserver(new DataChannel.Observer() {
+            dataChannel = localPeer.createDataChannel("test", new DataChannel.Init());
+            dataChannel.registerObserver(new DataChannel.Observer() {
                 @Override
                 public void onBufferedAmountChange(long l) {
 
@@ -367,7 +361,6 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(() -> {
                         Toast.makeText(MainActivity.this, new String(data), Toast.LENGTH_SHORT).show();
                     });
-                    localChannel.send(new DataChannel.Buffer(ByteBuffer.wrap("self test".getBytes()), false));
                 }
             });
             localPeer.createOffer(new SdpObserver() {
@@ -415,9 +408,16 @@ public class MainActivity extends AppCompatActivity {
             }, constraints);
 
         }).start();
+        ((EditText) findViewById(R.id.et)).setHint("type message here");
     }
 
     private void log(String data) {
         Log.d("MainActivity", data);
+    }
+
+    public void send(View view) {
+        new Thread(() -> {
+            this.dataChannel.send(new DataChannel.Buffer(ByteBuffer.wrap(((EditText)findViewById(R.id.et)).getText().toString().getBytes()), false));
+        }).start();
     }
 }

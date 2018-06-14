@@ -23,6 +23,17 @@
             android:text="connect"
             android:onClick="connect"/>
 
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="type remote ip here"
+            android:id="@+id/et"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="send"
+            android:onClick="send"/>
 
     </LinearLayout>
 

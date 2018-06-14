@@ -417,6 +417,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void send(View view) {
         new Thread(() -> {
+            if(this.dataChannel == null){
+                Toast.makeText(this, "plase connect first via the connect button", 0).show();
+                return;
+            }
             this.dataChannel.send(new DataChannel.Buffer(ByteBuffer.wrap(((EditText)findViewById(R.id.et)).getText().toString().getBytes()), false));
         }).start();
     }
